@@ -4,17 +4,20 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-# https://medium.com/@sabribarac/implementing-image-processing-kernels-from-scratch-using-convolution-in-python-4e966e9aafaf
-
-
 def main(image: str):
     img_pil = Image.open(image)
-    #img_pil = Image.open('/home/dpaulino/Downloads/cat-1.jpg')
+    mode =img_pil.mode
+    if mode == 'P':
+        img_pil=img_pil.convert('L')
+    #img_pil.show()
+    img = np.array(img_pil)
+    #imgtmp=Image.fromarray(img,mode='L')
+    #imgtmp.show()
+    #exit()
 
-    img_pil.show()
-    img = np.asarray(img_pil)
+    if len(img.shape) == 2:
+        img = np.reshape(img,(img.shape[0],img.shape[1],1))
+
     print('Original Image shape {}'.format(img.shape))
     fig,axis = plt.subplots(2,2)
 
@@ -28,7 +31,7 @@ def main(image: str):
     new_image = apply_convolutional(img, kernel_edge)
     print('New Image shape {}'.format(new_image.shape))
     # Create a PIL image from the new image and display it
-    sImg = Image.fromarray(new_image)
+    #sImg = Image.fromarray(new_image)
     plot_img(axis, (0, 1), 'Edge Detection',new_image)
 
     # kernel for vertical edge detection
@@ -36,7 +39,7 @@ def main(image: str):
 
     new_image = apply_convolutional(img, kernel_vert_edg)
     # Create a PIL image from the new image and display it
-    sImg = Image.fromarray(new_image)
+    #sImg = Image.fromarray(new_image)
     plot_img(axis, (1, 0), 'Vertical Edge Detection', new_image)
 
     # kernel for horizontal edge detection
@@ -45,7 +48,7 @@ def main(image: str):
     new_image = apply_convolutional(img, kernel_horz_edg)
     print('New Image shape {}'.format(new_image.shape))
     # Create a PIL image from the new image and display it
-    sImg = Image.fromarray(new_image)
+    #sImg = Image.fromarray(new_image)
     plot_img(axis, (1, 1), 'Horizontal Edge Detection', new_image)
 
     # Kernel for box blur
@@ -55,9 +58,18 @@ def main(image: str):
 
 
 def plot_img(axis,position:tuple,title,s_image):
-    sImg = Image.fromarray(s_image)
-    axis[position[0],position[1]].set_title(title)
-    axis[position[0],position[1]].imshow(sImg)
+
+    color = 'rgb'
+    axis[position[0], position[1]].set_title(title)
+    if s_image.shape[2] == 1:
+        s_image= np.reshape(s_image,(s_image.shape[0],s_image.shape[1]))
+        axis[position[0], position[1]].imshow(s_image,cmap='gray')
+        sImg = Image.fromarray(s_image,mode='L')
+        sImg.show(title=title)
+    else:
+        axis[position[0],position[1]].imshow(s_image)
+        sImg = Image.fromarray(s_image, mode='RGB')
+        sImg.show()
 
 def apply_convolutional(img: np.array, kernel: np.array) -> np.array:
     # no padding stride ==1
@@ -70,7 +82,8 @@ def apply_convolutional(img: np.array, kernel: np.array) -> np.array:
     stride = 1
     new_height = int(((i_height - k_height) / stride)) + 1
     new_width = int(((i_width - k_height) / stride)) + 1
-    filtered_img = np.zeros(shape=(new_height, new_width, 3))
+
+    filtered_img = np.zeros(shape=(new_height, new_width, i_c))
 
     l: int = 0
     # every line of matrix (stride of 1)
@@ -81,8 +94,9 @@ def apply_convolutional(img: np.array, kernel: np.array) -> np.array:
             window = img[line - k_height // 2:line + k_height // 2 + 1, column - k_width // 2:column + k_width // 2 + 1,:]
 
             filtered_img[l, c, 0] = int((window[:, :, 0] * kernel).sum())
-            filtered_img[l, c, 1] = int((window[:, :, 1] * kernel).sum())
-            filtered_img[l, c, 2] = int((window[:, :, 2] * kernel).sum())
+            if img.shape[2] == 3:
+                filtered_img[l, c, 1] = int((window[:, :, 1] * kernel).sum())
+                filtered_img[l, c, 2] = int((window[:, :, 2] * kernel).sum())
             c += 1
         l += 1
 
@@ -92,7 +106,7 @@ def apply_convolutional(img: np.array, kernel: np.array) -> np.array:
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    #main('/home/dpaulino/Downloads/cat-1.jpg')
+    #main('cat-1.jpg')
     main('Lena_RGB.png')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
